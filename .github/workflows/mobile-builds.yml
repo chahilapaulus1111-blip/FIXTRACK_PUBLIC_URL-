@@ -1,0 +1,73 @@
+name: Mobile test builds
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-apk:
+    runs-on: ubuntu-latest
+    env:
+      FIXTRACK_PUBLIC_URL: ${{ vars.FIXTRACK_PUBLIC_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - name: Install Capacitor dependencies
+        working-directory: mobile
+        run: npm install
+      - name: Configure hosted FixTrack URL
+        working-directory: mobile
+        run: npm run prepare:config
+      - name: Generate Android project
+        working-directory: mobile
+        run: npx cap add android
+      - name: Sync Capacitor
+        working-directory: mobile
+        run: npx cap sync android
+      - name: Build debug APK
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fixtrack-android-debug-apk
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+  ios-simulator:
+    runs-on: macos-15
+    env:
+      FIXTRACK_PUBLIC_URL: ${{ vars.FIXTRACK_PUBLIC_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Capacitor dependencies
+        working-directory: mobile
+        run: npm install
+      - name: Configure hosted FixTrack URL
+        working-directory: mobile
+        run: npm run prepare:config
+      - name: Generate iOS project
+        working-directory: mobile
+        run: npx cap add ios
+      - name: Sync Capacitor
+        working-directory: mobile
+        run: npx cap sync ios
+      - name: Build iOS simulator app
+        working-directory: mobile
+        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fixtrack-ios-simulator-app
+          path: mobile/build/Build/Products/Debug-iphonesimulator/App.app
+          if-no-files-found: error

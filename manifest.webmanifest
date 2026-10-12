@@ -1,0 +1,33 @@
+{
+  "id": "/",
+  "name": "FixTrack Workshop",
+  "short_name": "FixTrack",
+  "description": "Repair workshop management for jobs, quotations, and inventory.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "theme_color": "#176650",
+  "background_color": "#f5f7f4",
+  "icons": [
+    {
+      "src": "/icons/fixtrack-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/fixtrack-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/fixtrack.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

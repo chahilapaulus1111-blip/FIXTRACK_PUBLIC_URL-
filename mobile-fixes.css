@@ -1,0 +1,234 @@
+@media (max-width: 760px) {
+  nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    margin-top: 18px;
+    overflow: visible;
+  }
+
+  nav button {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    justify-content: flex-start;
+    white-space: normal;
+    text-align: left;
+  }
+
+  nav button span {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .tools + .tablewrap {
+    overflow: visible;
+  }
+
+  .tools + .tablewrap table,
+  .tools + .tablewrap tbody {
+    display: block;
+    width: 100%;
+    white-space: normal;
+  }
+
+  .tools + .tablewrap thead {
+    display: none;
+  }
+
+  .tools + .tablewrap tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(100px, auto);
+    align-items: center;
+    gap: 8px 12px;
+    padding: 12px;
+    border-top: 1px solid #eff2ed;
+  }
+
+  .tools + .tablewrap tbody td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .tools + .tablewrap tbody td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .tools + .tablewrap tbody td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .tools + .tablewrap tbody td:nth-child(3) {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .tools + .tablewrap tbody td:nth-child(3)::before,
+  .tools + .tablewrap tbody td:nth-child(4)::before {
+    display: block;
+    margin-bottom: 4px;
+    color: #8a958d;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .tools + .tablewrap tbody td:nth-child(3)::before {
+    content: "Status";
+  }
+
+  .tools + .tablewrap tbody td:nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .tools + .tablewrap tbody td:nth-child(4)::before {
+    content: "Technician";
+  }
+
+  .tools + .tablewrap tbody td:nth-child(5) {
+    grid-column: 2;
+    grid-row: 3;
+    justify-self: end;
+  }
+
+  .tablewrap:has(th:nth-child(6)) {
+    overflow: visible;
+  }
+
+  .tablewrap:has(th:nth-child(6)) table,
+  .tablewrap:has(th:nth-child(6)) tbody {
+    display: block;
+    width: 100%;
+    white-space: normal;
+  }
+
+  .tablewrap:has(th:nth-child(6)) thead {
+    display: none;
+  }
+
+  .tablewrap:has(th:nth-child(6)) tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+    padding: 15px;
+    border-top: 1px solid #eff2ed;
+  }
+
+  .tablewrap:has(th:nth-child(6)) tbody td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+  }
+
+  .tablewrap:has(th:nth-child(6)) tbody td::before {
+    display: block;
+    margin-bottom: 4px;
+    color: #8a958d;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .tablewrap:has(th:nth-child(6)) tbody td:nth-child(1) {
+    grid-column: 1 / -1;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .tablewrap:has(th:nth-child(6)) tbody td:nth-child(2)::before {
+    content: "SKU";
+  }
+
+  .tablewrap:has(th:nth-child(6)) tbody td:nth-child(3)::before {
+    content: "In stock";
+  }
+
+  .tablewrap:has(th:nth-child(6)) tbody td:nth-child(4)::before {
+    content: "Reorder level";
+  }
+
+  .tablewrap:has(th:nth-child(6)) tbody td:nth-child(5)::before {
+    content: "Unit cost";
+  }
+
+  .tablewrap:has(th:nth-child(6)) tbody td:nth-child(6) {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .tablewrap:has(#staff-rows) {
+    overflow: visible;
+  }
+
+  .tablewrap:has(#staff-rows) table {
+    display: block;
+    width: 100%;
+  }
+
+  #staff-rows {
+    display: block;
+    width: 100%;
+    white-space: normal;
+  }
+
+  #staff-rows tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px 16px;
+    width: 100%;
+    padding: 14px;
+    box-sizing: border-box;
+    border-top: 1px solid #eff2ed;
+  }
+
+  #staff-rows td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+  }
+
+  #staff-rows td::before {
+    display: block;
+    margin-bottom: 4px;
+    color: #8a958d;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    content: attr(data-label);
+  }
+
+  #staff-rows td:nth-child(1),
+  #staff-rows td:nth-child(2),
+  #staff-rows td:nth-child(5) {
+    grid-column: 1 / -1;
+  }
+
+  #staff-rows td:nth-child(1) {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  #staff-rows td:nth-child(5) {
+    justify-self: end;
+  }
+}

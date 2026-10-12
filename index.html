@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#176650">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="/icons/fixtrack.svg">
+    <title>FixTrack — Workshop workspace</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="mobile-fixes.css">
+    <link rel="stylesheet" href="auth.css">
+  </head>
+  <body>
+    <main class="auth-screen" id="auth-screen">
+      <section class="auth-panel" aria-labelledby="auth-title">
+        <a class="auth-brand" href="#">
+          <span class="logo">f<span>↗</span></span>
+          FixTrack<span class="dot">.</span>
+        </a>
+        <h1 id="auth-title">Sign in to FixTrack</h1>
+        <p class="auth-intro" id="auth-intro">Access your workshop workspace or create a customer account.</p>
+        <div class="auth-tabs" id="auth-tabs" role="tablist" aria-label="Account access">
+          <button type="button" id="show-login" role="tab" aria-selected="true">Sign in</button>
+          <button type="button" id="show-signup" role="tab" aria-selected="false">Sign up</button>
+        </div>
+        <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+        <form class="auth-form" id="login-form">
+          <label class="auth-field">Email address<input name="email" type="email" autocomplete="username" required></label>
+          <label class="auth-field">Password<input name="password" type="password" autocomplete="current-password" required></label>
+          <button class="primary" type="submit">Sign in</button>
+        </form>
+        <button class="auth-help" id="forgot-password" type="button">Forgot password?</button>
+        <form class="auth-form" id="signup-form" hidden>
+          <label class="auth-field">Full name<input name="name" autocomplete="name" maxlength="100" required></label>
+          <label class="auth-field">Email address<input name="email" type="email" autocomplete="email" required></label>
+          <label class="auth-field">Password<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+          <label class="auth-field">Confirm password<input name="confirm" type="password" autocomplete="new-password" minlength="8" required></label>
+          <button class="primary" type="submit">Create account</button>
+        </form>
+        <form class="auth-form" id="forced-password-form" hidden>
+          <label class="auth-field">New password (10+ characters)<input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
+          <label class="auth-field">Confirm new password<input name="confirm" type="password" autocomplete="new-password" minlength="10" required></label>
+          <button class="primary" type="submit">Set new password</button>
+        </form>
+        <form class="auth-form" id="setup-form" hidden>
+          <label class="auth-field">Administrator name<input name="name" autocomplete="name" maxlength="100" required></label>
+          <label class="auth-field">Administrator email<input name="email" type="email" autocomplete="email" required></label>
+          <label class="auth-field">Password (12+ characters)<input name="password" type="password" autocomplete="new-password" minlength="12" required></label>
+          <label class="auth-field">Confirm password<input name="confirm" type="password" autocomplete="new-password" minlength="12" required></label>
+          <button class="primary" type="submit">Set up administrator</button>
+        </form>
+        <p class="auth-note">Customer signups are verified by an administrator before repair access is granted. Technician accounts are created by an administrator.</p>
+      </section>
+    </main>
+
+    <div id="app-shell" hidden>
+    <aside>
+      <a class="brand" href="#dashboard">
+        <span class="logo">f<span>↗</span></span>
+        FixTrack<span class="dot">.</span>
+      </a>
+
+      <div class="workspace">
+        WORKSPACE <span>NA</span>
+        <strong>Windhoek workshop</strong>
+        <small>Repair management</small>
+      </div>
+
+      <div class="role-switcher" id="account-summary">
+        <label>Signed in as</label>
+        <strong id="account-role">Customer</strong>
+        <button class="password-button" id="change-password" type="button">Change password</button>
+      </div>
+
+      <nav>
+        <button data-view="dashboard">◫ <span>Overview</span></button>
+        <button data-view="jobs">▤ <span>Repair jobs</span></button>
+        <button data-view="quotes">▧ <span>Quotations</span></button>
+        <button data-view="parts">▦ <span>Spare parts</span></button>
+        <button data-view="track">◎ <span>Customer view</span></button>
+        <button data-view="accounts">♙ <span>Accounts</span></button>
+      </nav>
+
+      <div class="sidebottom">
+        <div class="demo">
+          ● &nbsp; WORKSHOP SYSTEM
+          <small>Repair records · stored on server</small>
+        </div>
+
+        <div class="profile">
+          <b>JM</b>
+          <div>
+            <span id="profile-name">Workshop manager</span>
+            <small>FixTrack Namibia</small>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="shell">
+      <header>
+        <span>Workspace <span class="slash">/</span> <b id="crumb">Overview</b></span>
+        <span class="topright">NAD · Namibia <span class="avatar" id="user-avatar">U</span><button class="install-button" id="install-app" type="button" hidden>Install app</button><button class="logout-button" id="logout-button" type="button">Sign out</button></span>
+      </header>
+
+      <main>
+        <div id="content"></div>
+      </main>
+
+      <footer>
+        FixTrack <span>Built for better repairs.</span>
+        <span>FixTrack · Workshop workspace</span>
+      </footer>
+    </div>
+    </div>
+
+    <dialog id="modal">
+      <div id="modalbody"></div>
+    </dialog>
+
+    <div id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
+

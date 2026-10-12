@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.py[cod]
+instance/
+mobile/node_modules/
+mobile/android/
+mobile/ios/
+mobile/build/
+mobile/capacitor.config.json.local

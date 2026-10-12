@@ -1,0 +1,9 @@
+{
+  "appId": "com.fixtrack.workshop",
+  "appName": "FixTrack",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  }
+}
