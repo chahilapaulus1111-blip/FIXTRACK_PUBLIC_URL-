@@ -39,6 +39,8 @@ New repairs must include the customer's registered email so that only that custo
 
 Signed-in users can change their own password. Administrators can issue a temporary password to another account; that user must replace it before continuing. If a user cannot sign in, they must contact their administrator. No password-reset or verification emails are sent.
 
+While signed in, the visible app checks for updates every five seconds and when the tab regains focus. Refreshing pauses while a dialog is open, a field is focused, or a save is in progress, so unfinished edits are preserved. Customers see their linked repairs and pending quotation decisions on their home screen.
+
 No fictional sample records are inserted. Create users and records on the running website.
 
 ## Tests
@@ -46,6 +48,18 @@ No fictional sample records are inserted. Create users and records on the runnin
 ```powershell
 python -m unittest discover -s tests -v
 ```
+
+The browser regression check uses an isolated SQLite database and two separate sessions. With Node.js and Chrome installed, install Playwright outside the application folder and provide its module path:
+
+```powershell
+npm install --prefix ../.tools/browser-check playwright
+$env:PLAYWRIGHT_MODULE = (Resolve-Path ../.tools/browser-check/node_modules/playwright).Path
+$env:CHROME = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+# Set PYTHON to the Python executable path if python is not on PATH.
+node tests/browser_sync.cjs
+```
+
+It checks automatic quotations, customer decisions, account registrations, preserved search and form edits, delayed refresh responses, and logout cleanup. Port 5087 must be available.
 
 ## Deployment note
 
