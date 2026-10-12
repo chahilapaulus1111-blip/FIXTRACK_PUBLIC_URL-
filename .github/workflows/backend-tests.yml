@@ -1,0 +1,25 @@
+name: Backend tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ""
+      FIXTRACK_REQUIRE_POSTGRES: "0"
+      FIXTRACK_SETUP_TOKEN: ""
+      SECRET_KEY: fixtrack-ci-only-not-a-production-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run backend workflow and deployment checks
+        run: python -m unittest discover -s tests -v

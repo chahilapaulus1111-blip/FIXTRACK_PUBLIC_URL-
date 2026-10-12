@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 instance/
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.sqlite3-*
+secret.key
 mobile/node_modules/
 mobile/android/
 mobile/ios/

@@ -44,6 +44,7 @@
           <button class="primary" type="submit">Set new password</button>
         </form>
         <form class="auth-form" id="setup-form" hidden>
+          <label class="auth-field" id="setup-token-field" hidden>Administrator setup token<input id="setup-token" name="setupToken" type="password" autocomplete="off"></label>
           <label class="auth-field">Administrator name<input name="name" autocomplete="name" maxlength="100" required></label>
           <label class="auth-field">Administrator email<input name="email" type="email" autocomplete="email" required></label>
           <label class="auth-field">Password (12+ characters)<input name="password" type="password" autocomplete="new-password" minlength="12" required></label>

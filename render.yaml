@@ -1,25 +1,21 @@
-databases:
-  - name: fixtrack-db
-    databaseName: fixtrack
-    user: fixtrack
-    plan: basic-256mb
-    region: oregon
-
+# Free Flask hosting; provide a Neon PostgreSQL URL in Render.
 services:
   - type: web
     name: fixtrack-api
     runtime: python
-    plan: starter
+    plan: free
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT
-    healthCheckPath: /api/setup-status
+    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 60
+    healthCheckPath: /healthz
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: fixtrack-db
-          property: connectionString
+        sync: false
       - key: SECRET_KEY
         generateValue: true
+      - key: FIXTRACK_SETUP_TOKEN
+        generateValue: true
+      - key: FIXTRACK_REQUIRE_POSTGRES
+        value: "1"
       - key: FIXTRACK_COOKIE_SECURE
         value: "1"

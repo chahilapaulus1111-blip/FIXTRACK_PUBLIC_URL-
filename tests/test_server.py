@@ -1,3 +1,7 @@
+import os
+import subprocess
+import sys
+from unittest import mock
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,6 +21,45 @@ class BackendWorkflowTests(unittest.TestCase):
 
     def tearDown(self):
         self.temporary_directory.cleanup()
+
+    def test_health_check_does_not_connect_to_database(self):
+        with mock.patch.object(server, "connect_db", side_effect=AssertionError("Health probe queried database")):
+            response = self.admin.get("/healthz")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {"status": "ok"})
+
+    def test_first_admin_requires_configured_setup_token(self):
+        with mock.patch.dict(os.environ, {"FIXTRACK_SETUP_TOKEN": "unit-test-setup-token"}):
+            self.assertTrue(self.admin.get("/api/setup-status").json["setupTokenRequired"])
+            body = {"name": "Test Admin", "email": "admin@example.test", "password": "correct-horse-test-password"}
+            self.assertEqual(self.admin.post("/api/setup", json=body).status_code, 403)
+            for token in ("wrong-token", "non-ascii-☃"):
+                self.assertEqual(self.admin.post("/api/setup", json={**body, "setupToken": token}).status_code, 403)
+            with server.connect_db() as connection:
+                self.assertEqual(connection.execute("SELECT COUNT(*) AS count FROM users").fetchone()["count"], 0)
+            body["setupToken"] = "unit-test-setup-token"
+            self.assertEqual(self.admin.post("/api/setup", json=body).status_code, 201)
+            self.assertEqual(self.admin.post("/api/setup", json=body).status_code, 409)
+
+    def test_hosted_startup_rejects_sqlite_fallback(self):
+        environment = os.environ.copy()
+        environment.update(DATABASE_URL="", FIXTRACK_REQUIRE_POSTGRES="1")
+        response = subprocess.run(
+            [sys.executable, "-c", "import server"], cwd=server.BASE_DIR,
+            env=environment, capture_output=True, text=True, timeout=15,
+        )
+        self.assertNotEqual(response.returncode, 0)
+        self.assertIn("SQLite fallback is disabled", response.stderr)
+
+    def test_startup_rejects_non_postgres_database_url(self):
+        environment = os.environ.copy()
+        environment.update(DATABASE_URL="sqlite:///test.sqlite3", FIXTRACK_REQUIRE_POSTGRES="0")
+        response = subprocess.run(
+            [sys.executable, "-c", "import server"], cwd=server.BASE_DIR,
+            env=environment, capture_output=True, text=True, timeout=15,
+        )
+        self.assertNotEqual(response.returncode, 0)
+        self.assertIn("DATABASE_URL must be a PostgreSQL", response.stderr)
 
     def test_server_backed_roles_and_repair_workflow(self):
         self.assertTrue(self.admin.get("/api/setup-status").json["needsAdmin"])

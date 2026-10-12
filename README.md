@@ -23,13 +23,13 @@ The current local server is bound to this computer and is not reachable from oth
 
 ## Render and mobile test builds
 
-The `render.yaml` Blueprint describes a Render web service and persistent PostgreSQL database. Its selected plans are paid; review Render's current pricing before creating the Blueprint. Push the project to GitHub, then create a Render Blueprint from that repository. After the first deployment, create the admin account on the Render URL.
+The `render.yaml` Blueprint selects a **free Render web service** with an external **Neon PostgreSQL database**. Push the project to GitHub, create a free Neon project, then connect the repository in Render and provide the private Neon URI as `DATABASE_URL`. Render generates the session secret and an administrator setup token. See [DEPLOYMENT.md](DEPLOYMENT.md) for the complete setup and existing-service instructions.
 
 For native test wrappers, set the GitHub repository variable `FIXTRACK_PUBLIC_URL` to the deployed HTTPS origin (for example, `https://fixtrack-api.onrender.com`). Run **Actions → Mobile test builds → Run workflow**. The workflow uploads an Android debug APK and an iOS Simulator `.app` artifact. These Capacitor shells load the hosted website, so the web URL must be available.
 
 The Android debug APK can be sideloaded for testing. The iOS simulator build requires a Mac/Xcode simulator; installing on a physical iPhone requires Apple Developer signing and TestFlight configuration. These are test builds, not store releases.
 
-On first launch, create the administrator account in the browser. Choose a unique password of at least 12 characters. There are no default credentials. The admin can create technician accounts and verify customer accounts from **Accounts**; customer signups cannot grant themselves staff or admin access.
+On first launch, create the administrator account in the browser. Hosted setup also requires the private `FIXTRACK_SETUP_TOKEN` from Render's Environment page. Choose a unique password of at least 12 characters. There are no default credentials. The admin can create technician accounts and verify customer accounts from **Accounts**; customer signups cannot grant themselves staff or admin access.
 
 ## Data and access
 

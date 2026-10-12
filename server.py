@@ -24,6 +24,10 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
 USE_POSTGRES = DATABASE_URL.startswith("postgresql://")
+if DATABASE_URL and not USE_POSTGRES:
+    raise RuntimeError("DATABASE_URL must be a PostgreSQL connection URL.")
+if os.environ.get("FIXTRACK_REQUIRE_POSTGRES") == "1" and not USE_POSTGRES:
+    raise RuntimeError("Hosted deployment requires a PostgreSQL DATABASE_URL; SQLite fallback is disabled.")
 INTEGRITY_ERRORS = (sqlite3.IntegrityError, psycopg.IntegrityError)
 SECRET_FILE = INSTANCE_DIR / "secret.key"
 STATIC_FILES = {
@@ -310,11 +314,17 @@ def get_session():
     return jsonify(user=user_json(user))
 
 
+@app.get("/healthz")
+def health_check():
+    # Frequent host probes should not keep a serverless database awake.
+    return jsonify(status="ok")
+
+
 @app.get("/api/setup-status")
 def setup_status():
     with connect_db() as connection:
         count = connection.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").fetchone()["count"]
-    return jsonify(needsAdmin=count == 0)
+    return jsonify(needsAdmin=count == 0, setupTokenRequired=bool(os.environ.get("FIXTRACK_SETUP_TOKEN")))
 
 
 @app.post("/api/setup")
@@ -323,6 +333,10 @@ def setup_first_admin():
         if connection.execute("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1").fetchone():
             return jsonify(error="Administrator setup is already complete."), 409
     body = json_body()
+    setup_token = os.environ.get("FIXTRACK_SETUP_TOKEN", "")
+    supplied_token = str(body.get("setupToken", ""))
+    if setup_token and not secrets.compare_digest(supplied_token.encode("utf-8"), setup_token.encode("utf-8")):
+        return jsonify(error="Enter the administrator setup token from your hosting environment."), 403
     name = str(body.get("name", "")).strip()
     email = str(body.get("email", "")).strip().lower()
     password = str(body.get("password", ""))
