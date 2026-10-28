@@ -1,8 +1,9 @@
-const CACHE_NAME = "fixtrack-shell-v4";
+const CACHE_NAME = "fixtrack-shell-v6";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/app.js",
+  "/notifications.js",
   "/style.css",
   "/mobile-fixes.css",
   "/auth.css",

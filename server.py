@@ -15,6 +15,7 @@ from flask import Flask, g, jsonify, request, send_from_directory, session
 import psycopg
 from psycopg.rows import dict_row
 from werkzeug.security import check_password_hash, generate_password_hash
+import notifications
 
 BASE_DIR = Path(__file__).resolve().parent
 INSTANCE_DIR = BASE_DIR / "instance"
@@ -33,6 +34,7 @@ SECRET_FILE = INSTANCE_DIR / "secret.key"
 STATIC_FILES = {
     "index.html",
     "app.js",
+    "notifications.js",
     "style.css",
     "mobile-fixes.css",
     "auth.css",
@@ -147,6 +149,7 @@ def init_db() -> None:
                 connection.execute("ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1")
             if "password_reset_required" not in user_columns:
                 connection.execute("ALTER TABLE users ADD COLUMN password_reset_required INTEGER NOT NULL DEFAULT 0")
+            notifications.init_db(connection)
         return
 
     with connect_db() as connection:
@@ -180,6 +183,7 @@ def init_db() -> None:
             connection.execute("ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1")
         if "password_reset_required" not in user_columns:
             connection.execute("ALTER TABLE users ADD COLUMN password_reset_required INTEGER NOT NULL DEFAULT 0")
+        notifications.init_db(connection)
 
 
 def now_text() -> str:
@@ -198,7 +202,9 @@ def read_workspace(connection: sqlite3.Connection | None = None) -> dict:
 
 
 def write_workspace(connection: sqlite3.Connection, payload: dict) -> None:
+    previous = read_workspace(connection)
     connection.execute("UPDATE workspace SET payload = ?, version = version + 1 WHERE id = 1", (json.dumps(payload),))
+    notifications.queue_changes(connection, previous, payload)
 
 
 def lock_workspace(connection) -> None:
@@ -268,6 +274,18 @@ def active_technician_names(connection: sqlite3.Connection) -> set[str]:
 
 def valid_technician_assignment(connection: sqlite3.Connection, name: str) -> bool:
     return name == "Unassigned" or name in active_technician_names(connection)
+
+
+def editable_job_ids(connection, payload: dict, user) -> list[str]:
+    if user["role"] == "admin":
+        return [job["id"] for job in payload.get("jobs", [])]
+    if user["role"] != "technician" or user["name"] == "Unassigned":
+        return []
+    # Existing assignments use names. Ambiguous legacy names must never grant access.
+    owners = connection.execute("SELECT id FROM users WHERE role = 'technician' AND name = ? LIMIT 2", (user["name"],)).fetchall()
+    if len(owners) != 1 or owners[0]["id"] != user["id"]:
+        return []
+    return [job["id"] for job in payload.get("jobs", []) if job.get("tech") == user["name"]]
 
 
 def append_job_history(job: dict, text: str) -> None:
@@ -486,11 +504,51 @@ def workspace():
         technicians = [] if g.user["role"] == "customer" else [
             {"name": name} for name in sorted(active_technician_names(connection), key=str.casefold)
         ]
+        editable = editable_job_ids(connection, payload, g.user)
     if g.user["role"] == "customer":
         payload["jobs"] = [job for job in payload.get("jobs", []) if job.get("customerEmail", "").lower() == g.user["email"].lower()]
         payload["parts"] = []
         payload["activity"] = []
-    return jsonify(user=user_json(g.user), technicians=technicians, version=version, **payload)
+    return jsonify(user=user_json(g.user), technicians=technicians, editableJobIds=editable, version=version, **payload)
+
+
+@app.get("/api/notifications")
+@login_required
+def notification_inbox():
+    with connect_db() as connection:
+        data = notifications.inbox(connection, g.user["email"])
+        if g.user["role"] == "admin":
+            data["emailDelivery"] = notifications.delivery_status(connection)
+    return jsonify(**data)
+
+
+@app.post("/api/notifications/read")
+@login_required
+def read_notifications():
+    notification_id = json_body().get("id")
+    with connect_db() as connection:
+        if notification_id:
+            connection.execute("UPDATE notifications SET read_at = ? WHERE id = ? AND recipient_email = ? AND read_at IS NULL", (now_text(), str(notification_id), g.user["email"].lower()))
+        else:
+            connection.execute("UPDATE notifications SET read_at = ? WHERE recipient_email = ? AND read_at IS NULL", (now_text(), g.user["email"].lower()))
+    return jsonify(ok=True)
+
+
+@app.post("/api/notifications/retry-email")
+@roles_required("admin")
+def retry_notification_email():
+    if not notifications.email_configuration():
+        return jsonify(error="Configure the selected email provider API key, FIXTRACK_EMAIL_FROM and FIXTRACK_PUBLIC_URL on the server. See DEPLOYMENT.md for Brevo or Resend setup."), 409
+    with connect_db() as connection:
+        connection.execute("UPDATE notifications SET email_status = 'pending', attempts = 0, retry_at = ? WHERE email_status = 'failed'", (now_text(),))
+    return jsonify(ok=True)
+
+
+@app.after_request
+def resume_email_delivery(response):
+    if getattr(g, "user", None) is not None and app.config.get("EMAIL_WORKER_ENABLED", True):
+        notifications.start_worker(connect_db, app.logger)
+    return response
 
 
 @app.put("/api/workspace")
@@ -521,7 +579,8 @@ def update_workspace():
             incoming_jobs = {job.get("id"): job for job in incoming["jobs"] if isinstance(job, dict) and job.get("id")}
             if len(incoming_jobs) != len(incoming["jobs"]) or not current_jobs.keys() <= incoming_jobs.keys():
                 return jsonify(error="Technicians cannot remove or replace repair records."), 403
-            allowed_fields = {"status", "tech", "history", "parts"}
+            editable = set(editable_job_ids(connection, current, g.user))
+            allowed_fields = {"status", "history", "parts"}
             immutable_fields = {"customer", "customerEmail", "device", "fault", "quote", "decision", "work", "phone", "serial", "date", "due"}
             part_usage: dict[str, int] = {}
             for job_id, job in incoming_jobs.items():
@@ -532,6 +591,10 @@ def update_workspace():
                         return jsonify(error="New jobs require customer, email, device, and fault details."), 400
                     continue
                 previous = current_jobs[job_id]
+                if job != previous and job_id not in editable:
+                    return jsonify(error="You can only edit repair jobs assigned to you."), 403
+                if job.get("tech") != previous.get("tech"):
+                    return jsonify(error="Only administrators can reassign existing repair jobs."), 403
                 if any(job.get(key) != previous.get(key) for key in immutable_fields):
                     return jsonify(error="Technicians cannot edit customer details or quotation data."), 403
                 if any(key not in set(previous) | allowed_fields for key in job):
@@ -599,7 +662,8 @@ def update_workspace():
         add_activity(updated, f"Workspace updated by {g.user['name']}")
         write_workspace(connection, updated)
         version = connection.execute("SELECT version FROM workspace WHERE id = 1").fetchone()["version"]
-    return jsonify(user=user_json(g.user), version=version, **updated)
+        editable = editable_job_ids(connection, updated, g.user)
+    return jsonify(user=user_json(g.user), editableJobIds=editable, version=version, **updated)
 
 
 @app.post("/api/jobs")
@@ -612,6 +676,8 @@ def create_job():
     if "@" not in body["customerEmail"]:
         return jsonify(error="Enter a valid customer email address."), 400
     with connect_db() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        lock_workspace(connection)
         technician = str(body.get("tech") or "Unassigned")
         if not valid_technician_assignment(connection, technician):
             return jsonify(error="Assign the repair to an active technician account."), 400
@@ -647,13 +713,19 @@ def create_job():
 def update_job(job_id: str):
     body = json_body()
     with connect_db() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        lock_workspace(connection)
         payload = read_workspace(connection)
         job = find_job(payload, job_id)
         if not job:
             return jsonify(error="Repair job not found."), 404
+        if job_id not in editable_job_ids(connection, payload, g.user):
+            return jsonify(error="You can only edit repair jobs assigned to you."), 403
         status = body.get("status", job["status"])
         tech = str(body.get("tech", job["tech"]))
         note = str(body.get("note", "")).strip()[:500]
+        if g.user["role"] == "technician" and tech != job.get("tech"):
+            return jsonify(error="Only administrators can reassign existing repair jobs."), 403
         if tech != job.get("tech", "Unassigned") and not valid_technician_assignment(connection, tech):
             return jsonify(error="Assign the repair to an active technician account."), 400
         if status not in STAGES:
@@ -680,6 +752,8 @@ def save_quotation(job_id: str):
     if quote <= 0 or not work:
         return jsonify(error="Quotation amount and work description are required."), 400
     with connect_db() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        lock_workspace(connection)
         payload = read_workspace(connection)
         job = find_job(payload, job_id)
         if not job:
@@ -703,6 +777,8 @@ def quotation_decision(job_id: str):
     if value not in {"Approved", "Declined"}:
         return jsonify(error="Decision must be Approved or Declined."), 400
     with connect_db() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        lock_workspace(connection)
         payload = read_workspace(connection)
         job = find_job(payload, job_id)
         if not job or job.get("customerEmail", "").lower() != g.user["email"].lower():
@@ -729,6 +805,8 @@ def use_part(job_id: str):
         part = next((item for item in payload["parts"] if str(item["id"]) == str(part_id)), None)
         if not job or not part:
             return jsonify(error="Repair job or spare part not found."), 404
+        if job_id not in editable_job_ids(connection, payload, g.user):
+            return jsonify(error="You can only edit repair jobs assigned to you."), 403
         if job["decision"] != "Approved" or job["status"] == "Collected":
             return jsonify(error="Parts require an approved quotation and an open job."), 409
         if int(part["stock"]) < 1:
@@ -835,10 +913,16 @@ def create_staff_user():
     role = body.get("role")
     if not name or not email or "@" not in email or role != "technician":
         return jsonify(error="Enter a name, valid email, and Technician role."), 400
+    if name.casefold() == "unassigned":
+        return jsonify(error="Use the technician's own name; Unassigned is reserved for jobs without a technician."), 400
     if len(password) < 10:
         return jsonify(error="Temporary passwords must be at least 10 characters."), 400
     try:
         with connect_db() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            lock_workspace(connection)
+            if connection.execute("SELECT 1 FROM users WHERE role = 'technician' AND LOWER(name) = LOWER(?) LIMIT 1", (name,)).fetchone():
+                return jsonify(error="A technician already uses that name. Use a distinct full name for assignments."), 409
             connection.execute(
                 "INSERT INTO users(name,email,password_hash,role,created_at) VALUES(?,?,?,?,?)",
                 (name, email, generate_password_hash(password), role, now_text()),

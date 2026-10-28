@@ -14,7 +14,7 @@ class BackendWorkflowTests(unittest.TestCase):
         self.temporary_directory = tempfile.TemporaryDirectory()
         server.DATABASE = Path(self.temporary_directory.name) / "test.sqlite3"
         server.init_db()
-        server.app.config.update(TESTING=True)
+        server.app.config.update(TESTING=True, EMAIL_WORKER_ENABLED=False)
         self.admin = server.app.test_client()
         self.customer = server.app.test_client()
         self.technician = server.app.test_client()

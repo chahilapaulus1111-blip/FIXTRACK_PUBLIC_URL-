@@ -102,8 +102,14 @@
     <div class="shell">
       <header>
         <span>Workspace <span class="slash">/</span> <b id="crumb">Overview</b></span>
-        <span class="topright">NAD · Namibia <span class="avatar" id="user-avatar">U</span><button class="install-button" id="install-app" type="button" hidden>Install app</button><button class="logout-button" id="logout-button" type="button">Sign out</button></span>
+        <span class="topright">NAD · Namibia <span class="avatar" id="user-avatar">U</span><button class="secondary" id="notification-toggle" type="button" aria-expanded="false" aria-controls="notification-panel">Notifications <span id="notification-count" aria-live="polite">0</span></button><button class="install-button" id="install-app" type="button" hidden>Install app</button><button class="logout-button" id="logout-button" type="button">Sign out</button></span>
       </header>
+
+      <section id="notification-panel" class="panel notification-panel" aria-label="Your notifications" hidden>
+        <div class="panelhead"><h2>Notifications</h2><button id="notifications-read-all" class="link" type="button">Mark all read</button></div>
+        <div id="email-delivery-status" role="status"></div>
+        <div id="notification-list"></div>
+      </section>
 
       <main>
         <div id="content"></div>
@@ -122,6 +128,7 @@
 
     <div id="toast" role="status"></div>
     <script src="app.js"></script>
+    <script src="notifications.js"></script>
   </body>
 </html>
 

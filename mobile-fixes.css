@@ -1,4 +1,17 @@
+.notification-panel { width: auto; margin: 20px 38px 0; max-height: 65vh; overflow-y: auto; }
+.notification-panel[hidden] { display: none; }
+.notification-item { padding: 16px 22px; border-bottom: 1px solid var(--line); }
+.notification-item.unread { background: #edf6f0; border-left: 3px solid var(--green); }
+.notification-open { text-align: left; line-height: 1.5; }
+.notification-item p { margin-top: 8px; overflow-wrap: anywhere; font-size: 12px; }
+#notification-count { display: inline-block; min-width: 18px; }
+#email-delivery-status .note { margin: 12px; }
+@media (max-width: 900px) {
+  header { height: auto; min-height: 76px; padding: 14px 18px; }
+  .topright { flex-wrap: wrap; gap: 8px; }
+}
 @media (max-width: 760px) {
+  .notification-panel { margin: 12px 18px 0; }
   nav {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
